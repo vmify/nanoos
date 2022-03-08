@@ -1,0 +1,88 @@
+name: Build
+on:
+  push:
+    paths:
+      - '.github/workflows/build.yml'
+      - 'build.sh'
+      - '*.config'
+      - 'Dockerfile'
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - arch: "x64"
+            docker-arch: "amd64"
+            config: "minimal"
+          - arch: "arm64"
+            docker-arch: "arm64"
+            config: "minimal"
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v1
+      - name: Set up Docker Buildx
+        id: buildx
+        uses: docker/setup-buildx-action@v1
+      - name: Inspect builder
+        run: |
+          echo "Name:      ${{ steps.buildx.outputs.name }}"
+          echo "Endpoint:  ${{ steps.buildx.outputs.endpoint }}"
+          echo "Status:    ${{ steps.buildx.outputs.status }}"
+          echo "Flags:     ${{ steps.buildx.outputs.flags }}"
+          echo "Platforms: ${{ steps.buildx.outputs.platforms }}"
+      - name: Build
+        run: |
+          docker buildx build --build-arg CONFIG_FILE=${{ matrix.config }}-${{ matrix.arch }}.config --platform=linux/${{ matrix.docker-arch }} --output type=local,dest=build .
+      - name: Upload artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: ${{ matrix.config }}-${{ matrix.arch }}
+          path: build/kernel.tar.gz
+          retention-days: 1
+
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v2
+      - name: Tag
+        id: tag
+        env:
+          GITHUB_TOKEN: ${{ secrets.WORKFLOW_TOKEN }}
+        run: |
+          git tag $GITHUB_RUN_NUMBER
+          git push origin $GITHUB_RUN_NUMBER
+          echo "::set-output name=tag::$GITHUB_RUN_NUMBER"
+      - name: Download all workflow run artifacts
+        uses: actions/download-artifact@v2
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ steps.tag.outputs.tag }}
+          release_name: ${{ steps.tag.outputs.tag }}
+          draft: false
+          prerelease: false
+      - name: Upload minimal x64
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: minimal-x64/kernel.tar.gz
+          asset_name: kernel-minimal-x64-${{ steps.tag.outputs.tag }}.tar.gz
+          asset_content_type: application/tar+gzip
+      - name: Upload minimal arm64
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: minimal-arm64/kernel.tar.gz
+          asset_name: kernel-minimal-arm64-${{ steps.tag.outputs.tag }}.tar.gz
+          asset_content_type: application/tar+gzip
