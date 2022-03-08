@@ -27,6 +27,11 @@ mount -t auto -o loop $img image
 mkdir -p image/EFI/BOOT
 cp $efi image/EFI/BOOT/$boot || exit
 
+mkdir -p image/legal/gummiboot
+echo "https://git.alpinelinux.org/aports/tree/main/gummiboot?id=0be04d7926dfdcab6901ef28fdc11534cba7a07e" > image/legal/gummiboot/source
+echo "48.1-r2" > image/legal/gummiboot/version
+cp gummiboot.license image/legal/gummiboot/LICENSE
+
 mkdir -p image/legal/kernel
 echo "https://github.com/vmify/kernel/archive/refs/tags/$KERNEL_VERSION.tar.gz" > image/legal/kernel/source
 echo "$KERNEL_VERSION" > image/legal/kernel/version

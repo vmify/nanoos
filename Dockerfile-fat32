@@ -12,6 +12,7 @@ ENV BUSYBOX_VERSION=$BUSYBOX_VERSION
 
 ADD build-fat32.sh /build/build.sh
 ADD LICENSE /build/LICENSE
+ADD gummiboot.license /build/gummiboot.license
 ADD kernel.tar.gz /build/kernel
 ADD busybox.tar.gz /build/busybox
 ADD nanoos.efi /build
