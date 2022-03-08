@@ -3,9 +3,9 @@ on:
   push:
     paths:
       - '.github/workflows/build.yml'
-      - 'build.sh'
-      - '*.config'
-      - 'Dockerfile'
+      - 'build-*.sh'
+      - 'initramfs/*'
+      - 'Dockerfile*'
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -14,10 +14,8 @@ jobs:
         include:
           - arch: "x64"
             docker-arch: "amd64"
-            config: "minimal"
           - arch: "arm64"
             docker-arch: "arm64"
-            config: "minimal"
     steps:
       - uses: actions/checkout@v2
       - name: Set up QEMU
@@ -33,13 +31,24 @@ jobs:
           echo "Flags:     ${{ steps.buildx.outputs.flags }}"
           echo "Platforms: ${{ steps.buildx.outputs.platforms }}"
       - name: Build
+        env:
+          NANOOS_VERSION: $GITHUB_RUN_NUMBER
+          KERNEL_VERSION: 6
+          BUSYBOX_VERSION: 54
         run: |
-          docker buildx build --build-arg CONFIG_FILE=${{ matrix.config }}-${{ matrix.arch }}.config --platform=linux/${{ matrix.docker-arch }} --output type=local,dest=build .
+          curl -L -o kernel.tar.gz https://github.com/vmify/kernel/releases/download/$KERNEL_VERSION/kernel-minimal-${{ matrix.arch }}-$KERNEL_VERSION.tar.gz
+          curl -L -o busybox.tar.gz https://github.com/vmify/busybox/releases/download/$BUSYBOX_VERSION/busybox-minimal-${{ matrix.arch }}-$BUSYBOX_VERSION.tar.gz
+          docker buildx build --platform=linux/${{ matrix.docker-arch }} --build-arg ARCH=${{ matrix.arch }} --build-arg NANOOS_VERSION=$NANOOS_VERSION --build-arg KERNEL_VERSION=$KERNEL_VERSION --build-arg BUSYBOX_VERSION=$BUSYBOX_VERSION --progress=plain --output type=local,dest=. .
+          docker buildx build --build-arg ARCH=${{ matrix.arch }} --build-arg NANOOS_VERSION=$NANOOS_VERSION --build-arg KERNEL_VERSION=$KERNEL_VERSION --build-arg BUSYBOX_VERSION=$BUSYBOX_VERSION --progress=plain -t fat32-build -f Dockerfile-fat32 .
+          docker run --privileged --name fat32-run fat32-build
+          docker cp fat32-run:/nanoos.fat32.gz .
+          docker container rm fat32-run
+          docker image rm fat32-build
       - name: Upload artifact
         uses: actions/upload-artifact@v2
         with:
-          name: ${{ matrix.config }}-${{ matrix.arch }}
-          path: build/kernel.tar.gz
+          name: ${{ matrix.arch }}
+          path: nanoos.fat32.gz
           retention-days: 1
 
   publish:
@@ -68,21 +77,21 @@ jobs:
           release_name: ${{ steps.tag.outputs.tag }}
           draft: false
           prerelease: false
-      - name: Upload minimal x64
+      - name: Upload x64
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: minimal-x64/kernel.tar.gz
-          asset_name: kernel-minimal-x64-${{ steps.tag.outputs.tag }}.tar.gz
+          asset_path: x64/nanoos.fat32.gz
+          asset_name: nanoos-x64-${{ steps.tag.outputs.tag }}.fat32.gz
           asset_content_type: application/tar+gzip
-      - name: Upload minimal arm64
+      - name: Upload arm64
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: minimal-arm64/kernel.tar.gz
-          asset_name: kernel-minimal-arm64-${{ steps.tag.outputs.tag }}.tar.gz
+          asset_path: arm64/nanoos.fat32.gz
+          asset_name: nanoos-arm64-${{ steps.tag.outputs.tag }}.fat32.gz
           asset_content_type: application/tar+gzip

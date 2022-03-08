@@ -1,25 +1,37 @@
-FROM alpine:3.15.0 AS build
-
 ARG ARCH
+ARG NANOOS_VERSION
 ARG KERNEL_VERSION
-ARG KERNEL_CONFIG=minimal
 ARG BUSYBOX_VERSION
-ARG BUSYBOX_CONFIG=minimal
+
+FROM alpine:3.15.0 AS initramfs
 
 ENV ARCH=$ARCH
 ENV KERNEL_VERSION=$KERNEL_VERSION
-ENV KERNEL_CONFIG=$KERNEL_CONFIG
 ENV BUSYBOX_VERSION=$BUSYBOX_VERSION
-ENV BUSYBOX_CONFIG=$BUSYBOX_CONFIG
 
-ADD build.sh /build/build.sh
-ADD init.sh /build/initramfs/etc/init.d/rcS
-ADD inittab /build/initramfs/etc/inittab
-ADD hotplug.sh /build/initramfs/sbin/hotplug
-ADD udhcpc.sh /build/initramfs/usr/share/udhcpc/default.script
+ADD build-initramfs.sh /build/build.sh
+ADD kernel.tar.gz /build/initramfs
+ADD busybox.tar.gz /build/initramfs/bin
+ADD initramfs/init.sh /build/initramfs/etc/init.d/rcS
+ADD initramfs/inittab /build/initramfs/etc/inittab
+ADD initramfs/hotplug.sh /build/initramfs/sbin/hotplug
+ADD initramfs/udhcpc.sh /build/initramfs/usr/share/udhcpc/default.script
 RUN apk add busybox-initscripts
 RUN sh -c /build/build.sh
 
 
+FROM alpine:edge AS efi
+
+ENV ARCH=$ARCH
+ENV NANOOS_VERSION=$NANOOS_VERSION
+ENV KERNEL_VERSION=$KERNEL_VERSION
+
+ADD build-efi.sh /build/build.sh
+ADD kernel.tar.gz /build
+COPY --from=initramfs /initramfs.cpio.gz /build
+RUN apk add efi-mkuki gummiboot-efistub file
+RUN sh -c /build/build.sh
+
+
 FROM scratch AS export
-COPY --from=build /initramfs.cpio.gz .
+COPY --from=efi /nanoos.efi .
