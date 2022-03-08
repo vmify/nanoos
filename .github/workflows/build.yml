@@ -3,6 +3,7 @@ on:
   push:
     paths:
       - '.github/workflows/build.yml'
+      - 'dependencies.conf'
       - 'build-*.sh'
       - 'initramfs/*'
       - 'Dockerfile*'
@@ -31,10 +32,8 @@ jobs:
           echo "Flags:     ${{ steps.buildx.outputs.flags }}"
           echo "Platforms: ${{ steps.buildx.outputs.platforms }}"
       - name: Build
-        env:
-          KERNEL_VERSION: 6
-          BUSYBOX_VERSION: 54
         run: |
+          source dependencies.conf
           curl -L -o kernel.tar.gz https://github.com/vmify/kernel/releases/download/$KERNEL_VERSION/kernel-minimal-${{ matrix.arch }}-$KERNEL_VERSION.tar.gz
           curl -L -o busybox.tar.gz https://github.com/vmify/busybox/releases/download/$BUSYBOX_VERSION/busybox-minimal-${{ matrix.arch }}-$BUSYBOX_VERSION.tar.gz
           docker buildx build --platform=linux/${{ matrix.docker-arch }} --build-arg ARCH=${{ matrix.arch }} --build-arg NANOOS_VERSION=$GITHUB_RUN_NUMBER --build-arg KERNEL_VERSION=$KERNEL_VERSION --build-arg BUSYBOX_VERSION=$BUSYBOX_VERSION --progress=plain --output type=local,dest=. .

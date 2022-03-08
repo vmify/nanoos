@@ -4,8 +4,8 @@ setlocal
 set ARCH=%1
 set DOCKER_ARCH=%2
 set NANOOS_VERSION=0.0.0
-set KERNEL_VERSION=6
-set BUSYBOX_VERSION=54
+
+FOR /F "tokens=*" %%i in ('type dependencies.conf') do SET %%i
 
 curl -L -o kernel.tar.gz https://github.com/vmify/kernel/releases/download/%KERNEL_VERSION%/kernel-minimal-%ARCH%-%KERNEL_VERSION%.tar.gz
 curl -L -o busybox.tar.gz https://github.com/vmify/busybox/releases/download/%BUSYBOX_VERSION%/busybox-minimal-%ARCH%-%BUSYBOX_VERSION%.tar.gz
