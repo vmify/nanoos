@@ -6,7 +6,7 @@ log() {
 
 
 echo
-log "NanoOS $(cat /etc/nanoos.version) booting ..."
+log "VMify NanoOS (rev. $(cat /etc/nanoos.version)) booting ..."
 [ "$NANOOS_DEBUG" = "1" ] && env
 
 if [ "$NANOOS_DEBUG" != "1" ]; then
