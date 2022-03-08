@@ -1,9 +1,9 @@
 @echo off
 setlocal
 
-set ARCH=arm64
-set DOCKER_ARCH=arm64
-set NANOOS_VERSION=0.0.2
+set ARCH=%1
+set DOCKER_ARCH=%2
+set NANOOS_VERSION=0.0.0
 set KERNEL_VERSION=6
 set BUSYBOX_VERSION=54
 

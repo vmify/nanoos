@@ -1,0 +1,1 @@
+call build.cmd x64 amd64

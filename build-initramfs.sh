@@ -24,6 +24,7 @@ echo '$MODALIAS=.*	root:root	0666	@modprobe -v -b "$MODALIAS"' > etc/mdev.conf
 chmod +x sbin/hotplug
 chmod +x usr/share/udhcpc/default.script
 chmod +x etc/init.d/rcS
+echo "$NANOOS_VERSION" > /etc/nanoos.version
 
 chroot . /bin/busybox --install -s
 ln -s /sbin/init init

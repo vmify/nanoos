@@ -1,0 +1,1 @@
+call build.cmd arm64 arm64
