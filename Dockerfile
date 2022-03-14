@@ -34,7 +34,7 @@ ENV KERNEL_VERSION=$KERNEL_VERSION
 ADD build-efi.sh /build/build.sh
 ADD kernel.tar.gz /build
 COPY --from=initramfs /initramfs.cpio.gz /build
-RUN apk add efi-mkuki gummiboot-efistub file
+RUN apk add efi-mkuki gummiboot-efistub file gzip
 RUN sh -c /build/build.sh
 
 
