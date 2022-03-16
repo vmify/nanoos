@@ -1,0 +1,19 @@
+FROM alpine:edge AS efi
+
+ARG ARCH
+ARG NANOOS_VERSION
+ARG KERNEL_VERSION
+
+ENV ARCH=$ARCH
+ENV NANOOS_VERSION=$NANOOS_VERSION
+ENV KERNEL_VERSION=$KERNEL_VERSION
+
+ADD kernel.tar.gz /build
+ADD build-efi.sh /build/build.sh
+COPY initramfs.cpio.gz /build
+RUN apk add efi-mkuki gummiboot-efistub file gzip grub-efi
+RUN sh -c /build/build.sh
+
+
+FROM scratch AS export
+COPY --from=efi /boot.efi .

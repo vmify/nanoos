@@ -21,22 +21,5 @@ RUN apk add busybox-initscripts
 RUN sh -c /build/build.sh
 
 
-FROM alpine:edge AS efi
-
-ARG ARCH
-ARG NANOOS_VERSION
-ARG KERNEL_VERSION
-
-ENV ARCH=$ARCH
-ENV NANOOS_VERSION=$NANOOS_VERSION
-ENV KERNEL_VERSION=$KERNEL_VERSION
-
-ADD build-efi.sh /build/build.sh
-ADD kernel.tar.gz /build
-COPY --from=initramfs /initramfs.cpio.gz /build
-RUN apk add efi-mkuki gummiboot-efistub file gzip
-RUN sh -c /build/build.sh
-
-
 FROM scratch AS export
-COPY --from=efi /nanoos.efi .
+COPY --from=initramfs /initramfs.cpio.gz .

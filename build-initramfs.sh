@@ -6,6 +6,7 @@ cd /build/initramfs || exit
 rm bzImage
 rm LICENSE
 rm bin/LICENSE
+find -type f -name 'tiny-power-button.ko.gz' -delete
 
 mkdir -p lib/mdev
 mkdir -p usr/sbin

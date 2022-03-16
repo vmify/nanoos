@@ -8,29 +8,35 @@ cd /build || exit
 # 32 MB is more than enough to accommodate our EFI PE executable containing our kernel, cmdline and initramfs
 FAT32_KB=32768
 
-efi=nanoos.efi
 img=/nanoos.fat32
-
-if [ "$ARCH" = "x64" ]; then
-  boot=bootx64.efi
-else
-  boot=bootaa64.efi
-fi
+efi=boot.efi
 
 dd if=/dev/zero of=$img bs=1K count=$FAT32_KB
 mkfs -t vfat $img
 mkdir image
-
-
 mount -t auto -o loop $img image
 
 mkdir -p image/EFI/BOOT
-cp $efi image/EFI/BOOT/$boot || exit
 
-mkdir -p image/legal/gummiboot
-echo "https://git.alpinelinux.org/aports/tree/main/gummiboot?id=0be04d7926dfdcab6901ef28fdc11534cba7a07e" > image/legal/gummiboot/source
-echo "48.1-r2" > image/legal/gummiboot/version
-cp gummiboot.license image/legal/gummiboot/LICENSE
+if [ "$ARCH" = "x64" ]; then
+  mkdir -p image/legal/gummiboot
+  echo "https://git.alpinelinux.org/aports/tree/main/gummiboot?id=0be04d7926dfdcab6901ef28fdc11534cba7a07e" > image/legal/gummiboot/source
+  echo "48.1-r2" > image/legal/gummiboot/version
+  cp gummiboot.license image/legal/gummiboot/LICENSE
+
+  boot=bootx64.efi
+else
+  mkdir -p image/legal/grub
+  echo "https://git.alpinelinux.org/aports/tree/main/grub?id=1895cf9fc22dde29d848d62c20eb0276ea2d34a7" > image/legal/grub/source
+  echo "2.06-r2" > image/legal/grub/version
+  cp grub.license image/legal/grub/LICENSE
+
+  sed -e "s/\$NANOOS_VERSION/$NANOOS_VERSION/g" grub.cfg > image/EFI/BOOT/grub.cfg
+  cp kernel/bzImage image/EFI/BOOT/linux
+  cp initramfs.cpio.gz image/EFI/BOOT/initrd
+  boot=bootaa64.efi
+fi
+cp $efi image/EFI/BOOT/$boot || exit
 
 mkdir -p image/legal/kernel
 echo "https://github.com/vmify/kernel/archive/refs/tags/$KERNEL_VERSION.tar.gz" > image/legal/kernel/source
