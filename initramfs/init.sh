@@ -19,10 +19,6 @@ else
   suppress_output=''
 fi
 
-if [ -f /proc/modules ]; then
-  modules=1
-fi
-
 
 
 log "Setting up PATH ..."
@@ -46,6 +42,10 @@ ln -snf /proc/self/fd/1 /dev/stdout
 ln -snf /proc/self/fd/2 /dev/stderr
 
 
+
+if [ -f /proc/modules ]; then
+  modules=1
+fi
 if [ "$modules" = "1" ]; then
   log "Loading drivers ..."
   # Silence modprobe to suppress confusing module not found messages for built-in modules
