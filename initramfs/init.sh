@@ -50,8 +50,8 @@ if [ "$modules" = "1" ]; then
   log "Loading drivers ..."
   # Silence modprobe to suppress confusing module not found messages for built-in modules
   eval "find /sys/ -name modalias | xargs sort -u | xargs -n 1 modprobe -q -s $suppress_output"
-  [ "$NANOOS_DEBUG" = "1" ] && ls -l /dev
 fi
+[ "$NANOOS_DEBUG" = "1" ] && ls -l /dev
 
 
 
@@ -61,6 +61,7 @@ then
   hypervisor="aws"
   # Amazon Time Sync Service -> https://aws.amazon.com/blogs/aws/keeping-time-with-amazon-time-sync-service/
   ntp_server=169.254.169.123
+  io_scheduler_device=nvme0
   app_device=/dev/nvme0n1p2
   swap_device=/dev/nvme1n1
   # shellcheck disable=SC2016
@@ -70,12 +71,22 @@ then
 else
   hypervisor="qemu"
   ntp_server=0.amazon.pool.ntp.org
+  io_scheduler_device=vda
   app_device=/dev/vda2
   swap_device=/dev/vdb
   token_cmd=''
   hostname_cmd='echo qemu-vm'
 fi
 log "Detected hypervisor: $hypervisor"
+
+
+
+log "Optimizing disk IO performance ..."
+# See https://wiki.ubuntu.com/Kernel/Reference/IOSchedulers
+[ "$NANOOS_DEBUG" = "1" ] && ls -l /sys/block
+[ "$NANOOS_DEBUG" = "1" ] && cat /sys/block/$io_scheduler_device/queue/scheduler
+echo "none" > /sys/block/$io_scheduler_device/queue/scheduler
+[ "$NANOOS_DEBUG" = "1" ] && cat /sys/block/$io_scheduler_device/queue/scheduler
 
 
 
