@@ -56,8 +56,8 @@ fi
 
 
 [ "$NANOOS_DEBUG" = "1" ] && lspci -mk
-if lspci -mk | grep -q '"ena"$'
-then
+[ "$NANOOS_DEBUG" = "1" ] && cat /sys/devices/virtual/dmi/id/bios_version
+if lspci -mk | grep -q '"ena"$'; then
   hypervisor="aws"
   # Amazon Time Sync Service -> https://aws.amazon.com/blogs/aws/keeping-time-with-amazon-time-sync-service/
   ntp_server=169.254.169.123
@@ -68,6 +68,15 @@ then
   token_cmd='echo -ne "PUT /latest/api/token HTTP/1.0\r\nHost: $ip\r\nX-aws-ec2-metadata-token-ttl-seconds: 60\r\n\r\n" | nc 169.254.169.254 80 | tail -n 1'
   # shellcheck disable=SC2016
   hostname_cmd='wget --header "X-aws-ec2-metadata-token: $token" http://169.254.169.254/latest/meta-data/instance-id -qO-'
+elif [ "$(cat /sys/devices/virtual/dmi/id/bios_version)" = "Google" ]; then
+  hypervisor="gcp"
+  # Google Internal NTP Server -> https://cloud.google.com/compute/docs/instances/configure-ntp
+  ntp_server=169.254.169.254
+  io_scheduler_device=sda
+  app_device=/dev/sda2
+  swap_device=/dev/sdb
+  token_cmd=''
+  hostname_cmd='wget --header "Metadata-Flavor: Google" http://169.254.169.254/computeMetadata/v1/instance/hostname -qO-'
 else
   hypervisor="qemu"
   ntp_server=0.amazon.pool.ntp.org
@@ -104,6 +113,7 @@ ifconfig lo 127.0.0.1
 
 
 log "Obtaining eth0 ip via DHCP ..."
+ifconfig eth0 mtu 1460 up
 ifconfig eth0 0.0.0.0
 eval "udhcpc -t 10 -i eth0 -f -q -S $suppress_output"
 
@@ -189,6 +199,10 @@ ntpd -p $ntp_server &
 
 log "Starting ACPI daemon ..."
 acpid -d &
+
+
+
+log "NanoOS boot completed in $(cut -d ' ' -f 1 /proc/uptime)s"
 
 
 
