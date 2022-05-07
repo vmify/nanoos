@@ -16,7 +16,6 @@ ADD busybox.tar.gz /build/initramfs/bin
 ADD initramfs/init.sh /build/initramfs/etc/init.d/rcS
 ADD initramfs/inittab /build/initramfs/etc/inittab
 ADD initramfs/hotplug.sh /build/initramfs/sbin/hotplug
-ADD initramfs/udhcpc.sh /build/initramfs/usr/share/udhcpc/default.script
 RUN apk add busybox-initscripts
 RUN sh -c /build/build.sh
 

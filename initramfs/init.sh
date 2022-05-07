@@ -58,44 +58,31 @@ fi
 [ "$NANOOS_DEBUG" = "1" ] && lspci -mk
 [ "$NANOOS_DEBUG" = "1" ] && cat /sys/devices/virtual/dmi/id/bios_version
 if lspci -mk | grep -q '"ena"$'; then
-  hypervisor="aws"
+  platform="aws"
   # Amazon Time Sync Service -> https://aws.amazon.com/blogs/aws/keeping-time-with-amazon-time-sync-service/
   ntp_server=169.254.169.123
-  io_scheduler_device=nvme0
   app_device=/dev/nvme0n1p2
   swap_device=/dev/nvme1n1
-  # shellcheck disable=SC2016
-  token_cmd='echo -ne "PUT /latest/api/token HTTP/1.0\r\nHost: $ip\r\nX-aws-ec2-metadata-token-ttl-seconds: 60\r\n\r\n" | nc 169.254.169.254 80 | tail -n 1'
-  # shellcheck disable=SC2016
-  hostname_cmd='wget --header "X-aws-ec2-metadata-token: $token" http://169.254.169.254/latest/meta-data/instance-id -qO-'
 elif [ "$(cat /sys/devices/virtual/dmi/id/bios_version)" = "Google" ]; then
-  hypervisor="gcp"
+  platform="gcp"
   # Google Internal NTP Server -> https://cloud.google.com/compute/docs/instances/configure-ntp
-  ntp_server=169.254.169.254
-  io_scheduler_device=sda
+  ntp_server=$(cat /proc/net/ipconfig/ntp_servers)
   app_device=/dev/sda2
   swap_device=/dev/sdb
-  token_cmd=''
-  hostname_cmd='wget --header "Metadata-Flavor: Google" http://169.254.169.254/computeMetadata/v1/instance/hostname -qO-'
 else
-  hypervisor="qemu"
+  platform="qemu"
   ntp_server=0.amazon.pool.ntp.org
-  io_scheduler_device=vda
   app_device=/dev/vda2
   swap_device=/dev/vdb
-  token_cmd=''
-  hostname_cmd='echo qemu-vm'
 fi
-log "Detected hypervisor: $hypervisor"
+log "Detected platform: $platform"
 
 
 
-log "Optimizing disk IO performance ..."
+# Not needed as it's already the default
+# log "Optimizing disk IO performance ..."
 # See https://wiki.ubuntu.com/Kernel/Reference/IOSchedulers
-[ "$NANOOS_DEBUG" = "1" ] && ls -l /sys/block
-[ "$NANOOS_DEBUG" = "1" ] && cat /sys/block/$io_scheduler_device/queue/scheduler
-echo "none" > /sys/block/$io_scheduler_device/queue/scheduler
-[ "$NANOOS_DEBUG" = "1" ] && cat /sys/block/$io_scheduler_device/queue/scheduler
+# echo "none" > /sys/block/$io_scheduler_device/queue/scheduler
 
 
 
@@ -107,34 +94,28 @@ fi
 
 
 
-log "Configuring loopback network adapter ..."
-ifconfig lo 127.0.0.1
+log "Configuring networking ..."
+lo_ip="127.0.0.1"
+lo_hostname="localhost"
+ifconfig lo $lo_ip
+echo -e "$lo_ip"'\t'"$lo_hostname" > /etc/hosts
+log "lo   : $lo_ip ($lo_hostname)"
 
-
-
-log "Obtaining eth0 ip via DHCP ..."
-ifconfig eth0 mtu 1460 up
-ifconfig eth0 0.0.0.0
-eval "udhcpc -t 10 -i eth0 -f -q -S $suppress_output"
-
-
-
-log "Configuring hostname ..."
-ip=$(ifconfig eth0 2>/dev/null|awk '/inet addr:/ {print $2}'|sed 's/addr://')
-# Token is required for AWS IMDSv2
-# shellcheck disable=SC2034
-token=$(eval "$token_cmd")
-hostname=$(eval "$hostname_cmd")
-echo -e "127.0.0.1"'\t'"localhost\n$ip"'\t'"$hostname" > /etc/hosts
-hostname "$hostname"
+eth0_ip=$(ifconfig eth0 | grep 'inet ' | cut -d ':' -f 2 | cut -d ' ' -f 1)
+eth0_hostname=$(hostname)
+echo -e "$eth0_ip"'\t'"$eth0_hostname" >> /etc/hosts
+log "eth0 : $eth0_ip ($eth0_hostname)"
 [ "$NANOOS_DEBUG" = "1" ] && cat /etc/hosts
+
+dns=$(cat /proc/net/pnp | grep nameserver | cut -d ' ' -f 2)
+echo "nameserver $dns" > /etc/resolv.conf
+log "dns  : $dns"
+[ "$NANOOS_DEBUG" = "1" ] && cat /proc/net/pnp
 
 
 
 log "Mounting app partition read-only ..."
 mount -t ext2 -r $app_device /app
-
-
 
 if [ "$NANOOS_READONLY" != "1" ]; then
   log "Overlaying a read-write tmpfs ..."

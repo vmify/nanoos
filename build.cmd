@@ -7,7 +7,7 @@ set NANOOS_VERSION=0.0.0
 
 FOR /F "tokens=*" %%i in ('type dependencies.conf') do SET %%i
 
-curl -L -o kernel.tar.gz https://github.com/vmify/kernel/releases/download/%KERNEL_VERSION%/kernel-minimal-%ARCH%-%KERNEL_VERSION%.tar.gz
+REM curl -L -o kernel.tar.gz https://github.com/vmify/kernel/releases/download/%KERNEL_VERSION%/kernel-minimal-%ARCH%-%KERNEL_VERSION%.tar.gz
 curl -L -o busybox.tar.gz https://github.com/vmify/busybox/releases/download/%BUSYBOX_VERSION%/busybox-minimal-%ARCH%-%BUSYBOX_VERSION%.tar.gz
 
 docker buildx build --platform=linux/%DOCKER_ARCH% --build-arg ARCH=%ARCH% --build-arg NANOOS_VERSION=%NANOOS_VERSION% --build-arg KERNEL_VERSION=%KERNEL_VERSION% --build-arg BUSYBOX_VERSION=%BUSYBOX_VERSION% --progress=plain --output type=local,dest=. -f Dockerfile-initramfs .
