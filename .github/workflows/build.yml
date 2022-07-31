@@ -40,14 +40,14 @@ jobs:
           docker buildx build --platform=linux/${{ matrix.docker-arch }} --build-arg ARCH=${{ matrix.arch }} --build-arg NANOOS_VERSION=$GITHUB_RUN_NUMBER --build-arg KERNEL_VERSION=$KERNEL_VERSION --build-arg BUSYBOX_VERSION=$BUSYBOX_VERSION --progress=plain --output type=local,dest=. -f Dockerfile-initramfs .
           docker build --build-arg ARCH=${{ matrix.arch }} --build-arg NANOOS_VERSION=$GITHUB_RUN_NUMBER --build-arg GRUB_VERSION=$GRUB_VERSION --build-arg KERNEL_VERSION=$KERNEL_VERSION --build-arg BUSYBOX_VERSION=$BUSYBOX_VERSION --progress=plain -t fat32-build -f Dockerfile-fat32 .
           docker run --privileged --name fat32-run fat32-build
-          docker cp fat32-run:/nanoos.fat32.gz .
+          docker cp fat32-run:/nanoos.tar.gz .
           docker container rm fat32-run
           docker image rm fat32-build
       - name: Upload artifact
         uses: actions/upload-artifact@v2
         with:
           name: ${{ matrix.arch }}
-          path: nanoos.fat32.gz
+          path: nanoos.tar.gz
           retention-days: 1
 
   publish:
@@ -82,8 +82,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: x64/nanoos.fat32.gz
-          asset_name: nanoos-x64-${{ steps.tag.outputs.tag }}.fat32.gz
+          asset_path: x64/nanoos.tar.gz
+          asset_name: nanoos-x64-${{ steps.tag.outputs.tag }}.tar.gz
           asset_content_type: application/tar+gzip
       - name: Upload arm64
         uses: actions/upload-release-asset@v1
@@ -91,6 +91,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: arm64/nanoos.fat32.gz
-          asset_name: nanoos-arm64-${{ steps.tag.outputs.tag }}.fat32.gz
+          asset_path: arm64/nanoos.tar.gz
+          asset_name: nanoos-arm64-${{ steps.tag.outputs.tag }}.tar.gz
           asset_content_type: application/tar+gzip

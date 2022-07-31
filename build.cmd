@@ -14,10 +14,10 @@ curl -L -C - -o busybox.tar.gz https://github.com/vmify/busybox/releases/downloa
 docker buildx build --platform=linux/%DOCKER_ARCH% --build-arg ARCH=%ARCH% --build-arg NANOOS_VERSION=%NANOOS_VERSION% --build-arg KERNEL_VERSION=%KERNEL_VERSION% --build-arg BUSYBOX_VERSION=%BUSYBOX_VERSION% --progress=plain --output type=local,dest=. -f Dockerfile-initramfs .
 docker buildx build --build-arg ARCH=%ARCH% --build-arg NANOOS_VERSION=%NANOOS_VERSION% --build-arg GRUB_VERSION=%GRUB_VERSION% --build-arg KERNEL_VERSION=%KERNEL_VERSION% --build-arg BUSYBOX_VERSION=%BUSYBOX_VERSION% --progress=plain -t fat32-build -f Dockerfile-fat32 .
 docker run --privileged --name fat32-run fat32-build
-docker cp fat32-run:/nanoos.fat32.gz .
+docker cp fat32-run:/nanoos.tar.gz .
 docker container rm fat32-run
 docker image rm fat32-build
 
-copy nanoos.fat32.gz ..\vmify-master\vmify\build\nanoos\nanoos-%ARCH%.fat32.gz
+copy nanoos.tar.gz ..\vmify-master\vmify\build\nanoos\nanoos-%ARCH%.tar.gz
 
 endlocal

@@ -3,18 +3,7 @@
 echo Building EFI boot partition ...
 cd /build || exit
 
-# 32 MB is the official smallest size allowed by FAT32
-# While QEMU recognizes smaller ones, AWS doesn't and fails to boot
-# 32 MB is more than enough to accommodate our EFI PE executable containing our kernel, cmdline and initramfs
-FAT32_KB=32768
-
-img=/nanoos.fat32
-efi=boot.efi
-
-dd if=/dev/zero of=$img bs=1K count=$FAT32_KB
-mkfs -t vfat $img
 mkdir image
-mount -t auto -o loop $img image
 
 mkdir -p image/EFI/BOOT
 
@@ -43,9 +32,6 @@ echo "https://github.com/vmify/nanoos/archive/refs/tags/$NANOOS_VERSION.tar.gz" 
 echo "$NANOOS_VERSION" > image/legal/nanoos/version
 cp LICENSE image/legal/nanoos
 
-umount image
+cd image
 
-
-echo Verifying FAT32 boot partition image ...
-fsck.vfat -r -f -v -l -n $img || exit
-gzip $img
+tar -czvf /nanoos.tar.gz *
