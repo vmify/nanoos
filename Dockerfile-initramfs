@@ -10,13 +10,14 @@ ENV NANOOS_VERSION=$NANOOS_VERSION
 ENV KERNEL_VERSION=$KERNEL_VERSION
 ENV BUSYBOX_VERSION=$BUSYBOX_VERSION
 
+RUN apk add busybox-initscripts
+
 ADD build-initramfs.sh /build/build.sh
 ADD kernel.tar.gz /build/initramfs
 ADD busybox.tar.gz /build/initramfs/bin
 ADD initramfs/init.sh /build/initramfs/etc/init.d/rcS
 ADD initramfs/inittab /build/initramfs/etc/inittab
 ADD initramfs/hotplug.sh /build/initramfs/sbin/hotplug
-RUN apk add busybox-initscripts
 RUN sh -c /build/build.sh
 
 
