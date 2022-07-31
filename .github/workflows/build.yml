@@ -38,7 +38,6 @@ jobs:
           curl -L -o busybox.tar.gz https://github.com/vmify/busybox/releases/download/$BUSYBOX_VERSION/busybox-minimal-${{ matrix.arch }}-$BUSYBOX_VERSION.tar.gz
           curl -L -o grub.tar.gz https://github.com/vmify/grub/releases/download/$GRUB_VERSION/grub-${{ matrix.arch }}-$GRUB_VERSION.tar.gz
           docker buildx build --platform=linux/${{ matrix.docker-arch }} --build-arg ARCH=${{ matrix.arch }} --build-arg NANOOS_VERSION=$GITHUB_RUN_NUMBER --build-arg KERNEL_VERSION=$KERNEL_VERSION --build-arg BUSYBOX_VERSION=$BUSYBOX_VERSION --progress=plain --output type=local,dest=. -f Dockerfile-initramfs .
-          docker buildx build --platform=linux/${{ matrix.docker-arch }} --build-arg ARCH=${{ matrix.arch }} --build-arg NANOOS_VERSION=$GITHUB_RUN_NUMBER --build-arg GRUB_VERSION=$GRUB_VERSION --build-arg KERNEL_VERSION=$KERNEL_VERSION --progress=plain --output type=local,dest=. -f Dockerfile-efi .
           docker build --build-arg ARCH=${{ matrix.arch }} --build-arg NANOOS_VERSION=$GITHUB_RUN_NUMBER --build-arg GRUB_VERSION=$GRUB_VERSION --build-arg KERNEL_VERSION=$KERNEL_VERSION --build-arg BUSYBOX_VERSION=$BUSYBOX_VERSION --progress=plain -t fat32-build -f Dockerfile-fat32 .
           docker run --privileged --name fat32-run fat32-build
           docker cp fat32-run:/nanoos.fat32.gz .
